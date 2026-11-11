@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>公文分文｜用戶旅程地圖（科室主管視角）</title>
+  <style>
+    :root {
+      --bg-dark: #0b1120;
+      --bg-panel: rgba(15, 23, 42, 0.92);
+      --bg-card: rgba(30, 41, 59, 0.75);
+      --border-color: rgba(148, 163, 184, 0.2);
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --c-says: #38bdf8;
+      --c-thinks: #a855f7;
+      --c-does: #10b981;
+      --c-feels: #f59e0b;
+      --c-pains: #f43f5e;
+      --c-gains: #22d3ee;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 50% 30%, #131c31 0%, #090d16 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding-bottom: 60px;
+    }
+
+    header {
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border-color);
+      padding: 26px 28px 22px;
+    }
+
+    .brand { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+    .brand-badge {
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      color: #fff;
+      font-weight: 700;
+      font-size: 12px;
+      padding: 5px 11px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+
+    header h1 { font-size: 21px; font-weight: 700; letter-spacing: 0.3px; margin-top: 10px; }
+    header p { font-size: 12.5px; color: var(--text-muted); margin-top: 4px; }
+
+    .wrap { max-width: 1240px; margin: 0 auto; padding: 0 20px; }
+
+    section { margin-top: 34px; }
+
+    .sec-title { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+
+    .sec-num {
+      background: rgba(56, 189, 248, 0.16);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 6px;
+    }
+
+    .sec-title h2 { font-size: 18px; font-weight: 700; }
+    .sec-sub { font-size: 12.5px; color: var(--text-muted); margin-bottom: 16px; padding-left: 2px; }
+
+    /* ---------- 分文規則卡 ---------- */
+    .rule-banner { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+
+    .rule-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 14px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .rule-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; }
+
+    .rule-dedicated::before { background: #a855f7; }
+    .rule-roundrobin::before { background: #10b981; }
+
+    .rule-card .rc-tag {
+      display: inline-block;
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      border-radius: 5px;
+      padding: 2px 8px;
+      margin-bottom: 8px;
+    }
+
+    .rule-dedicated .rc-tag { background: rgba(168, 85, 247, 0.15); color: #c4b5fd; border: 1px solid rgba(168, 85, 247, 0.45); }
+    .rule-roundrobin .rc-tag { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.45); }
+
+    .rule-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 6px; color: #f8fafc; }
+    .rule-card p { font-size: 12.5px; line-height: 1.65; color: #cbd5e1; }
+
+    /* ---------- 人物速覽 ---------- */
+    .persona-strip {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px 18px;
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .ps-avatar {
+      background: linear-gradient(135deg, #1e3a5f, #312e81);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 14px 8px;
+    }
+
+    .ps-avatar .emoji { font-size: 34px; }
+    .ps-avatar .name { font-weight: 700; font-size: 13px; }
+    .ps-avatar .role { font-size: 10.5px; color: var(--text-muted); text-align: center; line-height: 1.5; }
+
+    .ps-body { display: flex; flex-direction: column; gap: 10px; }
+
+    .ps-quote {
+      background: var(--bg-card);
+      border-left: 3px solid var(--accent);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      line-height: 1.7;
+      color: #e2e8f0;
+    }
+
+    .ps-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .ps-chip {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 11.5px;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+
+    .ps-chip b { color: #f8fafc; }
+
+    /* ---------- 情緒曲線 ---------- */
+    .curve-panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 14px 10px 6px;
+      margin-bottom: 14px;
+      overflow-x: auto;
+    }
+
+    .curve-panel svg { min-width: 980px; width: 100%; height: auto; display: block; }
+
+    /* ---------- 旅程表格 ---------- */
+    .journey-scroll { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-panel); }
+
+    .journey { display: grid; grid-template-columns: 128px repeat(6, minmax(178px, 1fr)); min-width: 1240px; }
+
+    .jcell { padding: 11px 13px; border-bottom: 1px solid rgba(148, 163, 184, 0.12); border-right: 1px solid rgba(148, 163, 184, 0.12); font-size: 12.5px; line-height: 1.6; color: #e2e8f0; }
+
+    .jhead {
+      background: rgba(30, 41, 59, 0.9);
+      padding: 13px;
+      border-bottom: 2px solid rgba(56, 189, 248, 0.5);
+    }
+
+    .jhead .stage-no {
+      display: inline-block;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: rgba(56, 189, 248, 0.18);
+      border: 1px solid rgba(56, 189, 248, 0.55);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 12px;
+      text-align: center;
+      line-height: 21px;
+      margin-bottom: 7px;
+    }
+
+    .jhead .stage-name { font-size: 13.5px; font-weight: 700; color: #f8fafc; display: block; line-height: 1.4; }
+    .jhead .stage-time { font-size: 11px; color: var(--accent); margin-top: 4px; display: block; }
+
+    .jrow-label {
+      background: rgba(15, 23, 42, 0.92);
+      font-weight: 700;
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.4px;
+    }
+
+    .row-feel .jcell:not(.jrow-label) { color: var(--c-feels); }
+    .row-pain .jcell:not(.jrow-label) { background: rgba(244, 63, 94, 0.045); color: #fecdd3; }
+    .row-opp .jcell:not(.jrow-label) { background: rgba(16, 185, 129, 0.05); color: #bbf7d0; }
+
+    .row-opp .jrow-label { color: #10b981; }
+    .row-pain .jrow-label { color: #f43f5e; }
+
+    .jcell .mood { font-size: 17px; display: block; margin-bottom: 3px; }
+
+    .jcell em { font-style: normal; color: #64748b; font-size: 11.5px; }
+
+    .jcell .t1 { color: #c4b5fd; font-weight: 700; }
+    .jcell .t2 { color: #6ee7b7; font-weight: 700; }
+
+    .jcell .pain-flag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      border-radius: 4px;
+      padding: 1px 6px;
+      margin-top: 5px;
+      letter-spacing: 0.3px;
+    }
+
+    .pf-time { background: rgba(245, 158, 11, 0.16); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .pf-exp  { background: rgba(168, 85, 247, 0.16); color: #c4b5fd; border: 1px solid rgba(168, 85, 247, 0.4); }
+    .pf-err  { background: rgba(244, 63, 94, 0.16); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.4); }
+    .pf-exp2 { background: rgba(6, 182, 212, 0.16); color: #67e8f9; border: 1px solid rgba(6, 182, 212, 0.4); }
+
+    /* ---------- To-Be 旅程 ---------- */
+    .tobe-flow { display: grid; grid-template-columns: 1fr 34px 1.35fr 34px 1fr 34px 1fr; gap: 0; align-items: stretch; }
+
+    .tobe-step {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 14px 15px;
+      position: relative;
+    }
+
+    .tobe-step .ts-icon { font-size: 22px; display: block; margin-bottom: 6px; }
+    .tobe-step .ts-tag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      border-radius: 5px;
+      padding: 2px 8px;
+      margin-bottom: 7px;
+    }
+
+    .ts-auto .ts-tag { background: rgba(56, 189, 248, 0.15); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.45); }
+    .ts-human .ts-tag { background: rgba(245, 158, 11, 0.15); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.45); }
+
+    .tobe-step h4 { font-size: 13.5px; font-weight: 700; color: #f8fafc; margin-bottom: 6px; }
+    .tobe-step p { font-size: 12px; line-height: 1.65; color: #cbd5e1; }
+    .tobe-step p b.t1 { color: #c4b5fd; }
+    .tobe-step p b.t2 { color: #6ee7b7; }
+
+    .tobe-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      font-size: 19px;
+      font-weight: 700;
+    }
+
+    .tobe-highlight {
+      margin-top: 14px;
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px dashed rgba(16, 185, 129, 0.45);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 12.5px;
+      line-height: 1.7;
+      color: #d1fae5;
+    }
+
+    .tobe-highlight b { color: #34d399; }
+
+    /* ---------- 循環與洞察 ---------- */
+    .loop-panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 18px 20px;
+    }
+
+    .loop-panel h3 { font-size: 14px; font-weight: 700; color: #fda4af; margin-bottom: 10px; }
+    .loop-panel p { font-size: 13px; line-height: 1.8; color: #e2e8f0; }
+    .loop-panel .arrow { color: var(--accent); font-weight: 700; padding: 0 2px; }
+    .loop-panel .next { margin-top: 12px; font-size: 12.5px; color: var(--text-muted); border-top: 1px dashed var(--border-color); padding-top: 12px; }
+    .loop-panel .next b { color: #10b981; }
+
+    footer {
+      margin-top: 40px;
+      padding: 18px 20px;
+      border-top: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-size: 11.5px;
+      line-height: 1.7;
+      text-align: center;
+    }
+
+    @media (max-width: 900px) {
+      .rule-banner { grid-template-columns: 1fr; }
+      .persona-strip { grid-template-columns: 1fr; }
+      .tobe-flow { grid-template-columns: 1fr; }
+      .tobe-arrow { transform: rotate(90deg); padding: 4px 0; }
+      header h1 { font-size: 17px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="brand">
+      <span class="brand-badge">MODA × AI TalenTech｜設計思考實作</span>
+    </div>
+    <h1 style="margin-top:10px;">「公文分文」流程｜用戶旅程地圖（As-Is 現況）</h1>
+    <p>Primary Persona：王科長（科室主管・分文決策者）・依同理心地圖六面向推導・對應講義 P.20-22（現況旅程與四大痛點辨識）</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ===================== 0. 分文規則 ===================== -->
+  <section>
+    <div class="sec-title"><span class="sec-num">STEP 0</span><h2>分文規則（旅程中的分流判斷依據）</h2></div>
+    <div class="sec-sub">每件公文先過「類型判斷」這一關，再決定走哪一條派工路徑——這是整趟旅程的核心分岔。</div>
+    <div class="rule-banner">
+      <div class="rule-card rule-dedicated">
+        <span class="rc-tag">TYPE 1</span>
+        <h3>🧭 特定業務公文 → 專責承辦人</h3>
+        <p>依<b>事務分配表</b>分文給該業務的<b>專責承辦人</b>（誰職掌、誰承辦）。</p>
+      </div>
+      <div class="rule-card rule-roundrobin">
+        <span class="rc-tag">TYPE 2</span>
+        <h3>♻️ 一般通用公文 → 輪分</h3>
+        <p>不屬特定業務的通用公文，<b>依序輪流派工</b>（輪分序目前由主管以紙本與記憶維護）。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 1. 人物速覽 ===================== -->
+  <section>
+    <div class="sec-title"><span class="sec-num">STEP 1</span><h2>人物速覽（同理心地圖推導來源）</h2></div>
+    <div class="persona-strip">
+      <div class="ps-avatar">
+        <span class="emoji">👨‍💼</span>
+        <span class="name">王科長</span>
+        <span class="role">科室主管・任職 25 年<br/>掌分文權責</span>
+      </div>
+      <div class="ps-body">
+        <div class="ps-quote">
+          「每一件都要先判斷是<b>特定業務</b>還是<b>一般輪分件</b>——特定件要對照分配表找專責的人，一般件要照輪分序輪流。<b>誰請假、輪到誰，全都在我腦子裡。</b>每天六十到一百多件，光分文就吃掉我一個多小時。」
+        </div>
+        <div class="ps-chips">
+          <span class="ps-chip">每日公文量 <b>60–120 件</b></span>
+          <span class="ps-chip">部屬 <b>8 位承辦人</b>（各有專責＋一般件輪分圈）</span>
+          <span class="ps-chip">分文時段 <b>每日 2 批</b>（09:00 前／14:00 前）</span>
+          <span class="ps-chip">工具 <b>待分文清單＋分配表＋自製輪分表＋便條</b></span>
+          <span class="ps-chip">成功定義 <b>當日分畢・零退文・專責正確・輪分公平</b></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 2. 用戶旅程地圖 ===================== -->
+  <section>
+    <div class="sec-title"><span class="sec-num">STEP 2</span><h2>用戶旅程地圖（現況 As-Is）</h2></div>
+    <div class="sec-sub">還原公文從進入科室到完成分文的實際旅程；情緒曲線越低代表壓力與負面感受越強。★＝兩段式分流關卡／情緒谷底。</div>
+
+    <div class="curve-panel">
+      <svg viewBox="0 0 1200 250" role="img" aria-label="分文旅程情緒曲線">
+        <defs>
+          <linearGradient id="curveFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#f43f5e" stop-opacity="0.28"/>
+            <stop offset="100%" stop-color="#f43f5e" stop-opacity="0.02"/>
+          </linearGradient>
+          <linearGradient id="curveStroke" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#f59e0b"/>
+            <stop offset="55%" stop-color="#f43f5e"/>
+            <stop offset="100%" stop-color="#10b981"/>
+          </linearGradient>
+        </defs>
+        <!-- 基準線 -->
+        <line x1="60" y1="125" x2="1140" y2="125" stroke="#475569" stroke-dasharray="5 6" stroke-width="1"/>
+        <text x="30" y="129" fill="#64748b" font-size="12">平常心</text>
+        <text x="18" y="35" fill="#64748b" font-size="12">正向 ↑</text>
+        <text x="18" y="225" fill="#64748b" font-size="12">負向 ↓</text>
+        <!-- 面積 -->
+        <path d="M100,165 L280,205 L460,225 L640,195 L820,240 L1000,108 L1000,235 L100,235 Z" fill="url(#curveFill)"/>
+        <!-- 曲線 -->
+        <polyline points="100,165 280,205 460,225 640,195 820,240 1000,108"
+                  fill="none" stroke="url(#curveStroke)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <!-- 節點 -->
+        <g font-size="13" font-weight="700">
+          <circle cx="100" cy="165" r="7" fill="#f59e0b"/><text x="100" y="150" text-anchor="middle" fill="#fbbf24">1 收文簽收</text>
+          <circle cx="280" cy="205" r="7" fill="#f87171"/><text x="280" y="190" text-anchor="middle" fill="#fca5a5">2 逐件解讀</text>
+          <circle cx="460" cy="225" r="8" fill="#f87171"/><text x="460" y="210" text-anchor="middle" fill="#fca5a5">3 類型判斷 ★</text>
+          <circle cx="640" cy="195" r="7" fill="#fbbf24"/><text x="640" y="180" text-anchor="middle" fill="#fbbf24">4 分流派工</text>
+          <circle cx="820" cy="240" r="8" fill="#f43f5e"/><text x="820" y="225" text-anchor="middle" fill="#fda4af">5 例外處理 ★</text>
+          <circle cx="1000" cy="108" r="7" fill="#10b981"/><text x="1000" y="93" text-anchor="middle" fill="#34d399">6 指派覆核</text>
+        </g>
+      </svg>
+    </div>
+
+    <div class="journey-scroll">
+      <div class="journey">
+        <!-- 表頭 -->
+        <div class="jcell jhead jrow-label">旅程階段</div>
+        <div class="jcell jhead"><span class="stage-no">1</span><span class="stage-name">收文簽收</span><span class="stage-time">08:30–09:00｜13:30–14:00</span></div>
+        <div class="jcell jhead"><span class="stage-no">2</span><span class="stage-name">逐件解讀</span><span class="stage-time">09:00–09:40（主要耗時）</span></div>
+        <div class="jcell jhead"><span class="stage-no">3</span><span class="stage-name">類型判斷 ★</span><span class="stage-time">每件 30–60 秒 × 60–120 件</span></div>
+        <div class="jcell jhead"><span class="stage-no">4</span><span class="stage-name">分流派工</span><span class="stage-time">09:40–10:15</span></div>
+        <div class="jcell jhead"><span class="stage-no">5</span><span class="stage-name">例外與衝突處理</span><span class="stage-time">不定時・穿插全天</span></div>
+        <div class="jcell jhead"><span class="stage-no">6</span><span class="stage-name">指派送出・覆核</span><span class="stage-time">10:15–10:30｜17:00 前</span></div>
+
+        <!-- 行為與觸點 -->
+        <div class="jcell jrow-label">🖐️ 行為與觸點</div>
+        <div class="jcell">登入公文系統；確認待分文總量；紙本公文點收登記。<br/><em>觸點：待分文清單、紙本簽收簿</em></div>
+        <div class="jcell">逐一開啟公文；閱讀主旨／案由／來文機關；必要時開附件與歷史檔。<br/><em>觸點：公文本文、附件檔</em></div>
+        <div class="jcell">判斷這件是<b>特定業務公文（TYPE 1）</b>還是<b>一般通用公文（TYPE 2）</b>；界線模糊者先擱置。<br/><em>觸點：人腦＋經驗＋螢幕邊便條</em></div>
+        <div class="jcell"><span class="t1">TYPE 1</span>：切視窗翻<b>事務分配表</b>→找專責承辦人。<br/><span class="t2">TYPE 2</span>：查<b>自製輪分表</b>→派下一位（請假跳過、手動更新輪分序）。<br/><em>觸點：分配表（書面）、輪分表、便條</em></div>
+        <div class="jcell">打電話／傳訊息問同仁；請示長官；跨科協調；接退文改分。<br/><em>觸點：電話、通訊軟體、請假系統</em></div>
+        <div class="jcell">系統點選承辦人；夾註分文意見；批次送出；確認無漏分；記錄今日例外。<br/><em>觸點：分文畫面、稽催報表</em></div>
+
+        <!-- 內心想法 -->
+        <div class="jcell jrow-label">🧠 內心想法</div>
+        <div class="jcell">「今天量看起來不少，上午的會恐怕要遲到。」「週一爆量日又來了。」</div>
+        <div class="jcell">「這到底是哪一類？案由寫得這麼模糊……」「三個案由夾在一起，要拆嗎？」</div>
+        <div class="jcell">「這件兩邊都沾，算特定還是一般？」「第一關分錯，後面全錯。」</div>
+        <div class="jcell">「表上是這樣寫，但這種通常給小李……」「輪分輪到誰了？小王請假要跳過嗎？」</div>
+        <div class="jcell">「小王請假、老陳手上還有積案……這件到底塞給誰才公平？」</div>
+        <div class="jcell">「希望不要被退。」「今天又退了兩件……規則到底該怎麼寫才不會分錯？」</div>
+
+        <!-- 感受 -->
+        <div class="jcell jrow-label row-feel">💛 感受</div>
+        <div class="jcell row-feel"><span class="mood">😮‍💨</span>負擔感起點<br/>「又來了」</div>
+        <div class="jcell row-feel"><span class="mood">😰</span>焦慮升高<br/>怕誤判性質</div>
+        <div class="jcell row-feel"><span class="mood">🤔</span>判斷壓力<br/>怕第一關就錯</div>
+        <div class="jcell row-feel"><span class="mood">😩</span>煩躁、疲乏<br/>翻表＋心算輪分序</div>
+        <div class="jcell row-feel"><span class="mood">🤯</span>壓力高峰<br/>夾在中間兩頭為難</div>
+        <div class="jcell row-feel"><span class="mood">😌</span>挫折中帶解脫<br/>明日重來</div>
+
+        <!-- 痛點 -->
+        <div class="jcell jrow-label row-pain">💢 痛點</div>
+        <div class="jcell row-pain">待分量無預警，尖峰日（週一、專案期間）爆量。<span class="pain-flag pf-time">高頻</span></div>
+        <div class="jcell row-pain">案由模糊、一文多案由、來文單位慣用語各異，判斷全靠人腦。<span class="pain-flag pf-time">最耗時間</span><span class="pain-flag pf-exp">依賴經驗</span></div>
+        <div class="jcell row-pain">「特定 vs 一般」分類清單<b>沒有明文標準</b>，界線全靠個人經驗認定。<span class="pain-flag pf-exp">依賴經驗</span><span class="pain-flag pf-err">易出錯</span></div>
+        <div class="jcell row-pain">輪分序靠<b>紙本與記憶</b>維護；分配表過時、例外常態化；請假／補位資訊不透明。<span class="pain-flag pf-exp">依賴經驗</span><span class="pain-flag pf-exp2">體驗差</span></div>
+        <div class="jcell row-pain">例外案件塞夾層；改分造成稽延列管；公平性遭質疑。<span class="pain-flag pf-err">易出錯</span><span class="pain-flag pf-exp2">體驗差</span></div>
+        <div class="jcell row-pain">夾註意見手打重工；「為什麼這樣分」的判斷知識無法累積。<span class="pain-flag pf-time">重工</span></div>
+
+        <!-- 機會點 -->
+        <div class="jcell jrow-label row-opp">🌱 AI 機會點</div>
+        <div class="jcell row-opp">批次摘要今日待分公文：主旨／案由／來文機關一覽，自動標記疑似急件與專案公文、爆量預警。</div>
+        <div class="jcell row-opp"><b>分文建議 Agent</b>：讀取主旨＋附件（OCR），輸出案由摘要與關鍵詞，供類型判斷使用。</div>
+        <div class="jcell row-opp"><b>自動分類</b>：先標示 TYPE 1／TYPE 2 屬性＋判斷依據＋信心度；界線模糊者標示「疑似跨域・建議人工確認」。</div>
+        <div class="jcell row-opp"><b class="t1">TYPE 1</b>：對照<b>事務分配表 RAG 知識庫</b>推薦專責人（附前例出處）。<b class="t2">TYPE 2</b>：<b>自動輪分引擎</b>——系統維護輪分序＋請假跳過＋負載均攤。</div>
+        <div class="jcell row-opp">動態調度建議：串接請假與負載資料，自動推薦備援人選＋理由；多重案由自動建議拆分方式。</div>
+        <div class="jcell row-opp">一鍵採納建議＋自動草稿夾註；<b>主管核定後才送出（Human Gate）</b>；退文原因自動歸類，回饋修正分文 Skill。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 3. To-Be 對照 ===================== -->
+  <section>
+    <div class="sec-title"><span class="sec-num">STEP 3</span><h2>AI 賦能後的旅程（To-Be 對照）</h2></div>
+    <div class="sec-sub">把「逐件人腦判斷＋翻表＋心算輪分」交給 Agent，主管只保留「核定」這一關。</div>
+    <div class="tobe-flow">
+      <div class="tobe-step">
+        <span class="ts-icon">📥</span>
+        <h4>公文進入系統</h4>
+        <p>每日 60–120 件自動進入待分佇列；急件、專案、爆量自動標記與預警。</p>
+      </div>
+      <div class="tobe-arrow">→</div>
+      <div class="tobe-step ts-auto">
+        <span class="ts-icon">🤖</span>
+        <span class="ts-tag">AGENT 自動處理</span>
+        <h4>自動分類＋分文建議</h4>
+        <p>依分文 Skill 標示 <b class="t1">TYPE 1／TYPE 2</b>＋判斷依據＋信心度；<b class="t1">TYPE 1</b> 對照分配表 RAG 推薦專責人（附前例出處）、<b class="t2">TYPE 2</b> 自動輪分（維護輪分序＋請假跳過＋負載均攤）；模糊件標「建議人工確認」。</p>
+      </div>
+      <div class="tobe-arrow">→</div>
+      <div class="tobe-step ts-human">
+        <span class="ts-icon">👨‍💼</span>
+        <span class="ts-tag">HUMAN GATE</span>
+        <h4>主管核定</h4>
+        <p>逐件檢視建議與依據，核定或改分；例外案件才需要打電話協調。</p>
+      </div>
+      <div class="tobe-arrow">→</div>
+      <div class="tobe-step">
+        <span class="ts-icon">🚀</span>
+        <h4>指派送出＋覆核</h4>
+        <p>系統帶入承辦人與草稿夾註送出；退文原因自動歸類，回饋修正分文 Skill。</p>
+      </div>
+    </div>
+    <div class="tobe-highlight">
+      📉 <b>旅程壓縮</b>：六階段 → 四步；主管工作量從「逐件判斷＋翻表＋心算輪分」收斂為「逐件核定」——每日分文時間可望從 <b>60–120 分鐘降至約 15 分鐘</b>（<em>目標值，須經 PoC 實測驗證</em>）。
+    </div>
+  </section>
+
+  <!-- ===================== 4. 洞察 ===================== -->
+  <section>
+    <div class="sec-title"><span class="sec-num">STEP 4</span><h2>系統思考：分文的惡性循環（增強迴路 R）</h2></div>
+    <div class="loop-panel">
+      <h3>🔁 為什麼分文永遠這麼耗時？</h3>
+      <p>
+        分文耗時越長 <span class="arrow">→</span> 主管越沒空整理「特定／一般分類清單＋輪分規則」
+        <span class="arrow">→</span> 規則持續留在腦中與紙本（未外顯）
+        <span class="arrow">→</span> 每件公文仍須人工判斷＋翻表＋心算輪分序
+        <span class="arrow">→</span> 更耗時、更容易分錯與跳錯位
+        <span class="arrow">→</span>（回到起點，且人事一異動，迴路整個斷鏈）。
+      </p>
+      <p class="next">
+        <b>槓桿解：</b>把隱性分文規則外顯為<b>分文判斷 Skill（SKILL.md）＋事務分配表 RAG 知識庫＋自動輪分引擎</b>，讓 Agent 產出帶依據的分文建議，主管只做核定（Human Gate）——打破「逐件靠人腦」的迴路結構。<br/>
+        <b>下一步：</b>進入「痛點 → Skill → PoC → RFP」核心主線（講義 P.23-39）。
+      </p>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  《AI 驅動政府流程再造》工作坊教材・設計思考實作練習｜用戶旅程地圖（P.20-22）：由同理心地圖（P.17-19）六面向推導<br/>
+  本頁內容為課堂示範用途，人物為化名；各階段耗時、輪分規則細節與情緒強度應於實際場域訪談查證後修正。
+</footer>
+
+</body>
+</html>
